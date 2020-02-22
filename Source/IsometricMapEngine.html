@@ -1,0 +1,753 @@
+<html>
+
+<body>
+
+<div id="divUI">
+	<label for="textareaTerrains">Terrains:</label><br />
+	<textarea id="textareaTerrains" cols="8" rows="9">
+~~~~~~~~
+~~~~~~~~
+~~--~~~~
+~--..~~~
+~~~.--~~
+~~-----~
+~~~----~
+~~~~--~~
+	</textarea><br />
+
+	<label for="textareaAltitudes">Altitudes:</label><br />
+	<textarea id="textareaAltitudes" cols="8" rows="9">
+........
+........
+........
+.1165...
+...5411.
+..22321.
+...2321.
+....11..
+	</textarea><br />
+
+	<input id="buttonRender" type="button" onclick="buttonRender_Clicked();" value="Render"><br />
+
+	<label for="divOutput">Rendered:</label><br />
+	<div id="divOutput"></div>
+</div>
+
+<script type='text/javascript'>
+
+// main
+
+function buttonRender_Clicked()
+{
+	var d = document;
+
+	var textareaTerrains = d.getElementById("textareaTerrains");
+	var cellTerrainsAsString = textareaTerrains.value;
+	var cellTerrainsAsStrings = cellTerrainsAsString.split("\n");
+
+	var textareaAltitudes = d.getElementById("textareaAltitudes");
+	var cellAltitudesAsString = textareaAltitudes.value;
+	var cellAltitudesAsStrings = cellAltitudesAsString.split("\n");
+
+	var map = Map.buildFromCellTerrainsAndAltitudesAsStrings
+	(
+		"Map0",
+		new Coords(16, 16, 8), // cellSizeInPixels
+		cellTerrainsAsStrings,
+		cellAltitudesAsStrings
+	);
+
+	var camera = new Camera
+	(
+		new Coords(320, 200, 1), // viewSize
+		new Coords(32, 96, -32), // pos
+		new Orientation
+		(
+			new Coords(1, -1, 1), // forward
+			new Coords(0, 0, 1) // down
+		)
+	);
+
+	var venue = new Venue("Venue0", map, camera);
+
+	var divOutput = d.getElementById("divOutput");
+	var venueAsHtmlElement = venue.toHTMLElement();
+	divOutput.appendChild(venueAsHtmlElement);
+}
+
+// classes
+
+function Camera(viewSize, pos, orientation)
+{
+	this.viewSize = viewSize;
+	this.pos = pos;
+	this.orientation = orientation;
+
+	this.viewSizeHalf = this.viewSize.clone().divideScalar(2);
+}
+
+function Color(name, systemColor)
+{
+	this.name = name;
+	this.systemColor = systemColor;
+}
+{
+	function Color_Instances()
+	{
+		this.Black 	= new Color("Black", "#000000");
+		this.Blue 	= new Color("Blue", "#0000ff");
+		this.Gray 	= new Color("Gray", "#808080");
+		this.Green 	= new Color("Green", "#00ff00");
+		this.White 	= new Color("White", "#ffffff");
+		this.Yellow 	= new Color("Yellow", "#ffff00");
+	}
+
+	Color.Instances = new Color_Instances();
+}
+
+function Coords(x, y, z)
+{
+	this.x = x;
+	this.y = y;
+	this.z = z;
+}
+{
+	Coords.prototype.add = function(other)
+	{
+		this.x += other.x;
+		this.y += other.y;
+		this.z += other.z;
+
+		return this;
+	}
+
+	Coords.prototype.clone = function()
+	{
+		return new Coords(this.x, this.y, this.z);
+	}
+
+	Coords.prototype.crossProduct = function(other)
+	{
+		var returnValue = new Coords
+		(
+			this.y * other.z - this.z * other.y,
+			this.z * other.x - this.x * other.z,
+			this.x * other.y - this.y * other.x
+		)
+
+		return returnValue;
+	}
+
+	Coords.prototype.divide = function(other)
+	{
+		this.x /= other.x;
+		this.y /= other.y;
+		this.z /= other.z;
+
+		return this;
+	}
+
+	Coords.prototype.divideScalar = function(scalar)
+	{
+		this.x /= scalar;
+		this.y /= scalar;
+		this.z /= scalar;
+
+		return this;
+	}
+
+	Coords.prototype.dotProduct = function(other)
+	{
+		var returnValue = 
+			this.x * other.x 
+			+ this.y * other.y 
+			+ this.z * other.z;
+
+		return returnValue;
+	}
+
+	Coords.prototype.magnitude = function()
+	{
+		return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+	}
+
+	Coords.prototype.multiply = function(other)
+	{
+		this.x *= other.x;
+		this.y *= other.y;
+		this.z *= other.z;
+
+		return this;
+	}
+
+	Coords.prototype.multiplyScalar = function(scalar)
+	{
+		this.x *= scalar;
+		this.y *= scalar;
+		this.z *= scalar;
+
+		return this;
+	}
+
+	Coords.prototype.normalize = function()
+	{
+		return this.divideScalar(this.magnitude());
+	}
+
+	Coords.prototype.overwriteWith = function(other)
+	{
+		this.x = other.x;
+		this.y = other.y;
+		this.z = other.z;
+
+		return this;
+	}
+
+	Coords.prototype.overwriteWithDimensions = function(x, y, z)
+	{
+		this.x = x;
+		this.y = y;
+		this.z = z;
+
+		return this;
+	}
+
+	Coords.prototype.subtract = function(other)
+	{
+		this.x -= other.x;
+		this.y -= other.y;
+		this.z -= other.z;
+
+		return this;
+	}
+}
+
+function Face(vertexPositions)
+{
+	this.vertexPositions = vertexPositions;
+	this.plane = new Plane
+	(
+		this.vertexPositions
+	);	
+}
+
+function Map(name, cellSizeInPixels, sizeInCells, cells)
+{
+	this.name = name;
+	this.cellSizeInPixels = cellSizeInPixels;
+	this.sizeInCells = sizeInCells;
+	this.cells = cells;
+}
+{
+	// static methods
+
+	Map.buildFromCellTerrainsAndAltitudesAsStrings = function
+	(
+		name, 
+		cellSizeInPixels, 
+		cellTerrainsAsStrings,
+		cellAltitudesAsStrings
+	)
+	{
+		for (var i = 0; i < cellTerrainsAsStrings.length; i++)
+		{
+			var cellTerrainRowAsString = cellTerrainsAsStrings[i];
+			if (cellTerrainRowAsString.trim().length == 0)
+			{
+				cellTerrainsAsStrings.length--;
+				break;
+			}
+		}
+
+		for (var i = 0; i < cellAltitudesAsStrings.length; i++)
+		{
+			var cellTerrainRowAsString = cellAltitudesAsStrings[i];
+			if (cellTerrainRowAsString.trim().length == 0)
+			{
+				cellAltitudesAsStrings.length--;
+				break;
+			}
+		}
+
+		var sizeInCells = new Coords
+		(
+			cellTerrainsAsStrings[0].length, 
+			cellTerrainsAsStrings.length,
+			1
+		);
+
+		var cells = [];
+		var cellPos = new Coords(0, 0, 0);
+		var terrains = Terrain.Instances._All;
+
+		for (var y = 0; y < sizeInCells.y; y++)
+		{
+			cellPos.y = y;
+
+			var cellTerrainRowAsString = cellTerrainsAsStrings[y];
+			var cellAltitudeRowAsString = cellAltitudesAsStrings[y];
+
+			for (var x = 0; x < sizeInCells.x; x++)
+			{
+				cellPos.x = x;
+
+				var terrainCodeCharAtCell = cellTerrainRowAsString[x];
+				var terrainAtCell = terrains[terrainCodeCharAtCell];
+
+				var altitudeAtCellAsString = cellAltitudeRowAsString[x];
+				var altitudeAtCell = 
+				(
+					altitudeAtCellAsString == "." 
+					? 0 
+					: parseInt(altitudeAtCellAsString)
+				); 
+
+				var cell = new MapCell(terrainAtCell, altitudeAtCell);
+
+				cells.push(cell);
+			}
+		}
+
+		var returnValue = new Map
+		(
+			name, 
+			cellSizeInPixels,
+			sizeInCells,
+			cells
+		);
+
+		return returnValue;
+	}
+
+	// instance methods	
+
+	// cells
+
+	Map.prototype.getCellAtPos = function(cellPosToGet)
+	{
+		return this.cells[this.getIndexOfCellAtPos(cellPosToGet)];
+	}
+
+	Map.prototype.getIndexOfCellAtPos = function(cellPosToGet)
+	{
+		return cellPosToGet.y * this.sizeInCells.x + cellPosToGet.x;
+	}
+
+	Map.prototype.getPosOfCellAtIndex = function(cellIndexToGet)
+	{
+		return new Coords
+		(
+			cellIndexToGet % this.sizeInCells.x, 
+			Math.floor(cellIndexToGet / this.sizeInCells.x),
+			0 
+		);
+	}
+
+	Map.prototype.setCellAtPos = function(cellPosToSet, cellToSet)
+	{
+		this.cells[this.getIndexOfCellAtPos(cellPosToSet)] = cellToSet;
+	}
+
+	// html
+
+	Map.prototype.toHTMLElement = function(camera)
+	{
+		var canvas = document.createElement("canvas");
+
+		canvas.width = camera.viewSize.x
+		canvas.height = camera.viewSize.y;
+
+		var graphics = canvas.getContext("2d");
+
+		graphics.fillStyle = Color.Instances.Black.systemColor;
+		graphics.fillRect(0, 0, camera.viewSize.x, camera.viewSize.y);
+
+		var cellPos = new Coords(0, 0, 0);
+		var drawPos = new Coords(0, 0, 0);
+
+		var transformCameraIsometric = Transform.Instances.CameraIsometric;	
+
+		var cellIndicesAndDistancesSortedBackToFront = [];
+
+		for (var y = 0; y < this.sizeInCells.y; y++)
+		{
+			cellPos.y = y;
+
+			for (var x = 0; x < this.sizeInCells.x; x++)
+			{
+				cellPos.x = x;
+
+				drawPos.overwriteWith
+				(
+					cellPos
+				).multiply
+				(
+					this.cellSizeInPixels
+				);
+
+				transformCameraIsometric.transformCoords
+				(
+					drawPos,
+					[ camera ]
+				);
+
+				var c;
+				for (c = 0; c < cellIndicesAndDistancesSortedBackToFront.length; c++)
+				{
+					var existing = cellIndicesAndDistancesSortedBackToFront[c];
+					var distanceOfExisting = existing[1];
+					if (drawPos.z >= distanceOfExisting)
+					{
+						break;
+					}
+				}
+
+				cellIndicesAndDistancesSortedBackToFront.splice
+				(
+					c, 
+					0, 
+					[
+						this.getIndexOfCellAtPos(cellPos), 
+						drawPos.z
+					]
+				);
+
+			}
+		}
+
+		var meshUnitCube = Mesh.buildUnitCube();
+		var meshForCell = Mesh.buildUnitCube();
+
+		for (var c = 0; c < cellIndicesAndDistancesSortedBackToFront.length; c++)
+		{
+			var cellIndexAndDistance = cellIndicesAndDistancesSortedBackToFront[c];
+			var cellIndex = cellIndexAndDistance[0];
+			var cellDistance = cellIndexAndDistance[1];
+
+			var cellPos = this.getPosOfCellAtIndex(cellIndex); 
+
+			var cellAtPos = this.getCellAtPos(cellPos);
+
+			var cellTerrain = cellAtPos.terrain;
+			var cellAltitude = cellAtPos.altitude;
+
+			cellPos.z = 0 - cellAltitude;
+
+			var scaleFactors = new Coords(1, 1, cellAltitude);
+			meshForCell.overwriteWith(meshUnitCube);
+			Transform.Instances.Scale.transformCoordsMany
+			(
+				meshForCell.vertexPositions,
+				[ scaleFactors ]
+			);
+
+			for (var f = 0; f < meshForCell.faces.length; f++)
+			{
+				var colorIndex = (f == 0 ? 0 : 1);
+				graphics.fillStyle = cellTerrain.colors[colorIndex].systemColor;
+				graphics.beginPath();
+
+				var face = meshForCell.faces[f];
+
+				if (face.plane.normal.dotProduct(camera.orientation.forward) >= 0)
+				{
+					continue;
+				}
+
+				var vertexOffsets = face.vertexPositions;
+
+				for (var v = 0; v < vertexOffsets.length; v++)
+				{
+					var vertexOffset = vertexOffsets[v];
+					drawPos.overwriteWith
+					(
+						cellPos
+					).add
+					(
+						vertexOffset
+					).multiply
+					(
+						this.cellSizeInPixels
+					);
+
+					transformCameraIsometric.transformCoords
+					(
+						drawPos,
+						[ camera ]
+					);
+
+					if (v == 0)
+					{
+						graphics.moveTo(drawPos.x, drawPos.y);
+					}
+					else
+					{
+						graphics.lineTo(drawPos.x, drawPos.y);
+					}
+				}
+
+				graphics.fill();
+				graphics.stroke();
+			}
+
+		}
+
+		var returnValue = canvas;
+		this.htmlElement = returnValue;
+		canvas.returnValue = this;
+
+		return canvas;
+	}
+}
+
+function MapCell(terrain, altitude)
+{
+	this.terrain = terrain;
+	this.altitude = altitude;	
+}
+
+function Mesh(name, vertexPositions, vertexIndicesForFaces)
+{
+	this.name = name;
+	this.vertexPositions = vertexPositions;
+
+	// Vertex indices should be in counterclockwise order.
+	this.vertexIndicesForFaces = vertexIndicesForFaces; 
+
+	this.recalculateFaces();
+}
+{
+	// static methods
+
+	Mesh.buildUnitCube = function()
+	{
+		return new Mesh
+		(
+			"UnitCube",
+			// vertexPositions
+			[
+				new Coords(0, 0, 0),
+				new Coords(1, 0, 0),
+				new Coords(1, 1, 0),
+				new Coords(0, 1, 0),
+
+				new Coords(0, 0, 1),
+				new Coords(1, 0, 1),
+				new Coords(1, 1, 1),
+				new Coords(0, 1, 1),
+			],
+			// vertexIndicesForFaces
+			[
+				[ 3, 2, 1, 0 ], // top
+
+				[ 0, 1, 5, 4 ], // north
+				[ 1, 2, 6, 5 ], // east
+				[ 2, 3, 7, 6 ], // south
+				[ 3, 0, 4, 7 ], // west
+
+				[ 4, 5, 6, 7 ], // bottom
+			]
+		);
+	}
+
+	// instance methods
+
+	Mesh.prototype.overwriteWith = function(other)
+	{
+		for (var i = 0; i < this.vertexPositions.length; i++)
+		{
+			this.vertexPositions[i].overwriteWith
+			(
+				other.vertexPositions[i]
+			);
+		}
+	}
+
+	Mesh.prototype.recalculateFaces = function()
+	{
+		this.faces = [];
+		for (var f = 0; f < this.vertexIndicesForFaces.length; f++)
+		{
+			var vertexIndicesForFace = this.vertexIndicesForFaces[f];
+
+			var vertexPositionsForFace = [];
+
+			for (var vi = 0; vi < vertexIndicesForFace.length; vi++)
+			{
+				var vertexIndex = vertexIndicesForFace[vi];
+					var vertexPosition = this.vertexPositions[vertexIndex];
+				vertexPositionsForFace.push(vertexPosition);
+			}
+
+			var face = new Face(vertexPositionsForFace);
+
+			this.faces.push(face);
+		}
+	}
+}
+
+function Orientation(forward, down)
+{
+	this.forward = forward.normalize();
+	this.right = down.crossProduct(this.forward).normalize();
+	this.down = this.forward.crossProduct(this.right).normalize();
+}
+
+function Plane(pointsOnPlane)
+{
+	this.normal = pointsOnPlane[1].clone().subtract
+	(
+		pointsOnPlane[0]
+	).crossProduct
+	(
+		pointsOnPlane[2].clone().subtract
+		(
+			pointsOnPlane[0]
+		)
+	);
+
+	this.distanceFromOrigin = this.normal.dotProduct(pointsOnPlane[0]);
+}
+
+function Terrain(name, codeChar, colors)
+{
+	this.name = name;
+	this.codeChar = codeChar;
+	this.colors = colors;
+}
+{
+	function Terrain_Instances()
+	{
+		this.Grass = new Terrain
+		(
+			"Grass", 
+			".",
+			[ Color.Instances.Green, Color.Instances.Yellow ]
+		);
+
+		this.Sand = new Terrain
+		(
+			"Sand", 
+			"-",
+			[ Color.Instances.Yellow, Color.Instances.Yellow ]
+		);
+
+		this.Water = new Terrain
+		(
+			"Water", 
+			"~",
+			[ Color.Instances.Blue, Color.Instances.Blue ]
+		);
+
+		this._All = 
+		[
+			this.Grass,
+			this.Sand,
+			this.Water,
+		];
+
+		for (var i = 0; i < this._All.length; i++)
+		{
+			var terrain = this._All[i];
+			this._All[terrain.codeChar] = terrain;
+		}
+	}
+
+	Terrain.Instances = new Terrain_Instances();	
+}
+
+function Transform(name, transformCoords)
+{
+	this.name = name;
+	this.transformCoords = transformCoords;
+}
+{
+	function Transform_Instances()
+	{
+		this.CameraIsometric = new Transform
+		(
+			"CameraIsometric",
+			function(coordsToTransform, parameters)
+			{
+				var camera = parameters[0];
+
+				coordsToTransform.subtract
+				(
+					camera.pos
+				);
+
+				var cameraOrientation = camera.orientation;
+
+				coordsToTransform.overwriteWithDimensions
+				(
+					cameraOrientation.right.dotProduct
+					(
+						coordsToTransform
+					),
+					cameraOrientation.down.dotProduct(coordsToTransform),
+					cameraOrientation.forward.dotProduct(coordsToTransform)
+				);
+
+				coordsToTransform.add
+				(
+					camera.viewSizeHalf
+				);
+			}
+		);
+
+		this.Scale = new Transform
+		(
+			"Scale",
+			function(coordsToTransform, parameters)
+			{
+				var scaleFactors = parameters[0];
+
+				coordsToTransform.multiply(scaleFactors);
+
+			}
+		);	
+
+		this.Translate = new Transform
+		(
+			"Translate",
+			function(coordsToTransform, parameters)
+			{
+				var amountToTranslate = parameters[0];
+
+				coordsToTransform.add(amountToTranslate);
+
+			}
+		);	
+	}
+
+	Transform.Instances = new Transform_Instances();
+
+	// instance methods
+
+	Transform.prototype.transformCoordsMany = function(coordsSetToTransform, parameters)
+	{
+		for (var i = 0; i < coordsSetToTransform.length; i++)
+		{
+			this.transformCoords(coordsSetToTransform[i], parameters);
+		}
+	}
+
+}
+
+function Venue(name, map, camera)
+{
+	this.name = name;
+	this.map = map
+	this.camera = camera;
+}
+{
+	Venue.prototype.toHTMLElement = function()
+	{
+		return this.map.toHTMLElement(this.camera);
+	}
+}
+
+</script>
+
+</body>
+</html>
