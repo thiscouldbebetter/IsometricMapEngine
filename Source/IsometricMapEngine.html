@@ -51,7 +51,7 @@ function buttonRender_Clicked()
 	var cellAltitudesAsString = textareaAltitudes.value;
 	var cellAltitudesAsStrings = cellAltitudesAsString.split("\n");
 
-	var map = Map.buildFromCellTerrainsAndAltitudesAsStrings
+	var map = MapOfCells.buildFromCellTerrainsAndAltitudesAsStrings
 	(
 		"Map0",
 		new Coords(16, 16, 8), // cellSizeInPixels
@@ -79,6 +79,7 @@ function buttonRender_Clicked()
 <script type="text/javascript" src="Framework/Source/Display/Color.js"></script>
 
 <script type="text/javascript" src="Framework/Source/Extensions/ArrayExtensions.js"></script>
+<script type="text/javascript" src="Framework/Source/Extensions/ArrayHelper.js"></script>
 
 <script type="text/javascript" src="Framework/Source/Geometry/Coords.js"></script>
 <script type="text/javascript" src="Framework/Source/Geometry/Orientation.js"></script>

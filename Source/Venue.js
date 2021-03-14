@@ -1,12 +1,14 @@
 
-function Venue(name, map, camera)
+class Venue
 {
-	this.name = name;
-	this.map = map
-	this.camera = camera;
-}
-{
-	Venue.prototype.draw = function()
+	constructor(name, map, camera)
+	{
+		this.name = name;
+		this.map = map
+		this.camera = camera;
+	}
+
+	draw = function()
 	{
 		var d = document;
 
@@ -15,5 +17,5 @@ function Venue(name, map, camera)
 		var graphics = canvas.getContext("2d");
 
 		this.map.drawToGraphicsForCamera(graphics, this.camera);
-	};
+	}
 }

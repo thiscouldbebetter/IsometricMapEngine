@@ -1,16 +1,17 @@
 
-function Map(name, cellSizeInPixels, sizeInCells, cells)
+class MapOfCells
 {
-	this.name = name;
-	this.cellSizeInPixels = cellSizeInPixels;
-	this.sizeInCells = sizeInCells;
-	this.cells = cells;
-}
+	constructor(name, cellSizeInPixels, sizeInCells, cells)
+	{
+		this.name = name;
+		this.cellSizeInPixels = cellSizeInPixels;
+		this.sizeInCells = sizeInCells;
+		this.cells = cells;
+	}
 
-{
 	// static methods
 
-	Map.buildFromCellTerrainsAndAltitudesAsStrings = function
+	static buildFromCellTerrainsAndAltitudesAsStrings
 	(
 		name, 
 		cellSizeInPixels, 
@@ -47,7 +48,7 @@ function Map(name, cellSizeInPixels, sizeInCells, cells)
 
 		var cells = [];
 		var cellPos = new Coords(0, 0, 0);
-		var terrains = Terrain.Instances._All;
+		var terrains = Terrain.Instances()._All;
 
 		for (var y = 0; y < sizeInCells.y; y++)
 		{
@@ -77,7 +78,7 @@ function Map(name, cellSizeInPixels, sizeInCells, cells)
 			}
 		}
 
-		var returnValue = new Map
+		var returnValue = new MapOfCells
 		(
 			name, 
 			cellSizeInPixels,
@@ -92,17 +93,17 @@ function Map(name, cellSizeInPixels, sizeInCells, cells)
 
 	// cells
 
-	Map.prototype.getCellAtPos = function(cellPosToGet)
+	getCellAtPos(cellPosToGet)
 	{
 		return this.cells[this.getIndexOfCellAtPos(cellPosToGet)];
 	}
 
-	Map.prototype.getIndexOfCellAtPos = function(cellPosToGet)
+	getIndexOfCellAtPos(cellPosToGet)
 	{
 		return cellPosToGet.y * this.sizeInCells.x + cellPosToGet.x;
 	}
 
-	Map.prototype.getPosOfCellAtIndex = function(cellIndexToGet)
+	getPosOfCellAtIndex(cellIndexToGet)
 	{
 		return new Coords
 		(
@@ -112,14 +113,14 @@ function Map(name, cellSizeInPixels, sizeInCells, cells)
 		);
 	}
 
-	Map.prototype.setCellAtPos = function(cellPosToSet, cellToSet)
+	setCellAtPos(cellPosToSet, cellToSet)
 	{
 		this.cells[this.getIndexOfCellAtPos(cellPosToSet)] = cellToSet;
 	}
 
 	// html
 
-	Map.prototype.drawToGraphicsForCamera = function(graphics, camera)
+	drawToGraphicsForCamera(graphics, camera)
 	{
 		graphics.fillStyle = Color.Instances().Black.systemColor();
 		graphics.fillRect(0, 0, camera.viewSize.x, camera.viewSize.y);
@@ -127,7 +128,7 @@ function Map(name, cellSizeInPixels, sizeInCells, cells)
 		var cellPos = new Coords(0, 0, 0);
 		var drawPos = new Coords(0, 0, 0);
 
-		var transforms = Transform.Instances;
+		var transforms = Transform.Instances();
 		var transformCameraIsometric = transforms.CameraIsometric;
 
 		var cellIndicesAndDistancesSortedBackToFront = [];
@@ -255,5 +256,5 @@ function Map(name, cellSizeInPixels, sizeInCells, cells)
 				}
 			}
 		}
-	};
+	}
 }

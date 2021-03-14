@@ -1,12 +1,35 @@
 
-function Transform(name, transformCoords)
+class Transform
 {
-	this.name = name;
-	this.transformCoords = transformCoords;
+	constructor(name, transformCoords)
+	{
+		this.name = name;
+		this.transformCoords = transformCoords;
+	}
+
+	static Instances()
+	{
+		if (Transform._instances == null)
+		{
+			Transform._instances = new Transform_Instances();
+		}
+		return Transform._instances;
+	}
+
+	// instance methods
+
+	transformCoordsMany(coordsSetToTransform, parameters)
+	{
+		for (var i = 0; i < coordsSetToTransform.length; i++)
+		{
+			this.transformCoords(coordsSetToTransform[i], parameters);
+		}
+	}
 }
 
+class Transform_Instances
 {
-	function Transform_Instances()
+	constructor()
 	{
 		this.CameraIsometric = new Transform
 		(
@@ -61,16 +84,4 @@ function Transform(name, transformCoords)
 			}
 		);
 	}
-
-	Transform.Instances = new Transform_Instances();
-
-	// instance methods
-
-	Transform.prototype.transformCoordsMany = function(coordsSetToTransform, parameters)
-	{
-		for (var i = 0; i < coordsSetToTransform.length; i++)
-		{
-			this.transformCoords(coordsSetToTransform[i], parameters);
-		}
-	};
 }

@@ -1,11 +1,12 @@
 
-// classes
-
-function Camera(viewSize, pos, orientation)
+class Camera
 {
-	this.viewSize = viewSize;
-	this.pos = pos;
-	this.orientation = orientation;
+	constructor(viewSize, pos, orientation)
+	{
+		this.viewSize = viewSize;
+		this.pos = pos;
+		this.orientation = orientation;
 
-	this.viewSizeHalf = this.viewSize.clone().divideScalar(2);
+		this.viewSizeHalf = this.viewSize.clone().divideScalar(2);
+	}
 }

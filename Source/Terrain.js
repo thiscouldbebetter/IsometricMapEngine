@@ -1,13 +1,26 @@
 
-function Terrain(name, codeChar, colors)
+class Terrain
 {
-	this.name = name;
-	this.codeChar = codeChar;
-	this.colors = colors;
+	constructor(name, codeChar, colors)
+	{
+		this.name = name;
+		this.codeChar = codeChar;
+		this.colors = colors;
+	}
+
+	static Instances()
+	{
+		if (Terrain._instances == null)
+		{
+			Terrain._instances = new Terrain_Instances();
+		}
+		return Terrain._instances;
+	}
 }
 
+class Terrain_Instances
 {
-	function Terrain_Instances()
+	constructor()
 	{
 		var colors = Color.Instances();
 
@@ -45,6 +58,4 @@ function Terrain(name, codeChar, colors)
 			this._All[terrain.codeChar] = terrain;
 		}
 	}
-
-	Terrain.Instances = new Terrain_Instances();
 }

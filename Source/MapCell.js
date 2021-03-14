@@ -1,6 +1,9 @@
 
-function MapCell(terrain, altitude)
+class MapCell
 {
-	this.terrain = terrain;
-	this.altitude = altitude;	
+	constructor(terrain, altitude)
+	{
+		this.terrain = terrain;
+		this.altitude = altitude;
+	}
 }
