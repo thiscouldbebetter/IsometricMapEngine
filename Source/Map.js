@@ -141,47 +141,89 @@ class MapOfCells
 			{
 				cellPos.x = x;
 
-				drawPos.overwriteWith
+				this.drawToGraphicsForCamera_1_Cell
 				(
-					cellPos
-				).multiply
-				(
-					this.cellSizeInPixels
+					camera,
+					drawPos,
+					cellPos,
+					transformCameraIsometric,
+					cellIndicesAndDistancesSortedBackToFront
 				);
-
-				transformCameraIsometric.transformCoords
-				(
-					drawPos, [ camera ]
-				);
-
-				var c;
-				for (c = 0; c < cellIndicesAndDistancesSortedBackToFront.length; c++)
-				{
-					var existing = cellIndicesAndDistancesSortedBackToFront[c];
-					var distanceOfExisting = existing[1];
-					if (drawPos.z >= distanceOfExisting)
-					{
-						break;
-					}
-				}
-
-				cellIndicesAndDistancesSortedBackToFront.splice
-				(
-					c, 
-					0, 
-					[
-						this.getIndexOfCellAtPos(cellPos), 
-						drawPos.z
-					]
-				);
-
 			}
 		}
+
+		this.drawToGraphicsForCamera_2_Render
+		(
+			graphics,
+			camera,
+			drawPos,
+			transformCameraIsometric,
+			cellIndicesAndDistancesSortedBackToFront,
+		);
+	}
+
+	drawToGraphicsForCamera_1_Cell
+	(
+		camera,
+		drawPos,
+		cellPos,
+		transformCameraIsometric,
+		cellIndicesAndDistancesSortedBackToFront
+	)
+	{
+		drawPos.overwriteWith
+		(
+			cellPos
+		).multiply
+		(
+			this.cellSizeInPixels
+		);
+
+		transformCameraIsometric.transformCoords
+		(
+			drawPos, [ camera ]
+		);
+
+		var c;
+		for (c = 0; c < cellIndicesAndDistancesSortedBackToFront.length; c++)
+		{
+			var existing = cellIndicesAndDistancesSortedBackToFront[c];
+			var distanceOfExisting = existing[1];
+			if (drawPos.z >= distanceOfExisting)
+			{
+				break;
+			}
+		}
+
+		cellIndicesAndDistancesSortedBackToFront.splice
+		(
+			c, 
+			0, 
+			[
+				this.getIndexOfCellAtPos(cellPos), 
+				drawPos.z
+			]
+		);
+	}
+
+	drawToGraphicsForCamera_2_Render
+	(
+		graphics,
+		camera,
+		drawPos,
+		transformCameraIsometric,
+		cellIndicesAndDistancesSortedBackToFront,
+	)
+	{
+		var transforms = Transform.Instances();
+		var transformScale = transforms.Scale;
 
 		var meshBuilder = new MeshBuilder();
 		var meshUnitCube = meshBuilder.unitCube_Geometry();
 		var meshForCell = meshBuilder.unitCube_Geometry();
 		var cameraForward = camera.orientation.forward;
+
+		var scaleFactors = new Coords(.5, .5, 1);
 
 		for (var c = 0; c < cellIndicesAndDistancesSortedBackToFront.length; c++)
 		{
@@ -199,7 +241,8 @@ class MapOfCells
 
 			cellPos.z = 0 - cellAltitude;
 
-			var scaleFactors = new Coords(.5, .5, cellAltitude);
+			scaleFactors.z = cellAltitude;
+
 			meshForCell.overwriteWith(meshUnitCube);
 			transforms.Scale.transformCoordsMany
 			(
@@ -207,9 +250,10 @@ class MapOfCells
 			);
 
 			var faces = meshForCell.faces();
+			var faceIndexTop = 4;
+
 			for (var f = 0; f < faces.length; f++)
 			{
-				var faceIndexTop = 4;
 				var colorIndex = (f == faceIndexTop ? 0 : 1);
 				graphics.fillStyle = cellTerrainColors[colorIndex].systemColor();
 				graphics.beginPath();

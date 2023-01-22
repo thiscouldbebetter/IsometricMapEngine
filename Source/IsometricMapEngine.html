@@ -3,6 +3,14 @@
 <body>
 
 <div id="divUI">
+
+	<h3>Isometric Map Engine</h3>
+
+	<p>
+		Use the Terrains and Altitudes textareas to specify the landscape,
+		then click the Render button to display its isometric graphical representation.
+	</p>
+
 	<label for="textareaTerrains">Terrains:</label><br />
 	<textarea id="textareaTerrains" cols="8" rows="9">
 ~~~~~~~~
@@ -43,6 +51,8 @@ function buttonRender_Clicked()
 {
 	var d = document;
 
+	var cellSizeInPixels = new Coords(16, 16, 2.4);
+
 	var textareaTerrains = d.getElementById("textareaTerrains");
 	var cellTerrainsAsString = textareaTerrains.value;
 	var cellTerrainsAsStrings = cellTerrainsAsString.split("\n");
@@ -54,7 +64,7 @@ function buttonRender_Clicked()
 	var map = MapOfCells.buildFromCellTerrainsAndAltitudesAsStrings
 	(
 		"Map0",
-		new Coords(16, 16, 8), // cellSizeInPixels
+		cellSizeInPixels,
 		cellTerrainsAsStrings,
 		cellAltitudesAsStrings
 	);
