@@ -1,11 +1,19 @@
 
 class MapOfCells
 {
-	constructor(name, cellSizeInPixels, sizeInCells, cells)
+	constructor
+	(
+		name,
+		cellSizeInPixels,
+		sizeInCells,
+		terrains,
+		cells
+	)
 	{
 		this.name = name;
 		this.cellSizeInPixels = cellSizeInPixels;
 		this.sizeInCells = sizeInCells;
+		this.terrains = terrains;
 		this.cells = cells;
 	}
 
@@ -15,10 +23,16 @@ class MapOfCells
 	(
 		name, 
 		cellSizeInPixels, 
+		terrains,
 		cellTerrainsAsStrings,
 		cellAltitudesAsStrings
 	)
 	{
+		var terrainsByCodeChar = new Map // Note this is a lookup, not a MapOfCells!
+		(
+			terrains.map(x => [x.codeChar, x])
+		);
+
 		for (var i = 0; i < cellTerrainsAsStrings.length; i++)
 		{
 			var cellTerrainRowAsString = cellTerrainsAsStrings[i];
@@ -48,7 +62,6 @@ class MapOfCells
 
 		var cells = [];
 		var cellPos = new Coords(0, 0, 0);
-		var terrains = Terrain.Instances()._All;
 
 		for (var y = 0; y < sizeInCells.y; y++)
 		{
@@ -61,8 +74,10 @@ class MapOfCells
 			{
 				cellPos.x = x;
 
-				var terrainCodeCharAtCell = cellTerrainRowAsString[x];
-				var terrainAtCell = terrains[terrainCodeCharAtCell];
+				var terrainCodeCharAtCell =
+					cellTerrainRowAsString[x];
+				var terrainAtCell =
+					terrainsByCodeChar.get(terrainCodeCharAtCell);
 
 				var altitudeAtCellAsString = cellAltitudeRowAsString[x];
 				var altitudeAtCell = 
@@ -83,10 +98,51 @@ class MapOfCells
 			name, 
 			cellSizeInPixels,
 			sizeInCells,
+			terrains,
 			cells
 		);
 
 		return returnValue;
+	}
+
+	static demo()
+	{
+		var cellSizeInPixels = new Coords(16, 16, 2.4);
+		var terrainDefns = Terrain.Instances()._All;
+		var cellTerrainsAsStrings = 
+		[
+			"~~~~~~~~",
+			"~~~~~~~~",
+			"~~--~~~~",
+			"~--..~~~",
+			"~~~.--~~",
+			"~~-----~",
+			"~~~----~",
+			"~~~~--~~"
+		];
+
+		var cellAltitudesAsStrings =
+		[
+			"........",
+			"........",
+			"........",
+			".1165...",
+			"...5411.",
+			"..22321.",
+			"...2321.",
+			"....11.."
+		];
+
+		var returnMap = MapOfCells.buildFromCellTerrainsAndAltitudesAsStrings
+		(
+			"MapDemo",
+			cellSizeInPixels,
+			terrainDefns,
+			cellTerrainsAsStrings,
+			cellAltitudesAsStrings
+		);
+
+		return returnMap;
 	}
 
 	// instance methods	
@@ -221,7 +277,6 @@ class MapOfCells
 		var meshBuilder = new MeshBuilder();
 		var meshUnitCube = meshBuilder.unitCube_Geometry();
 		var meshForCell = meshBuilder.unitCube_Geometry();
-		var cameraForward = camera.orientation.forward;
 
 		var scaleFactors = new Coords(.5, .5, 1);
 
@@ -231,73 +286,104 @@ class MapOfCells
 			var cellIndex = cellIndexAndDistance[0];
 			var cellDistance = cellIndexAndDistance[1];
 
-			var cellPos = this.getPosOfCellAtIndex(cellIndex); 
-
-			var cellAtPos = this.getCellAtPos(cellPos);
-
-			var cellTerrain = cellAtPos.terrain;
-			var cellTerrainColors = cellTerrain.colors;
-			var cellAltitude = cellAtPos.altitude;
-
-			cellPos.z = 0 - cellAltitude;
-
-			scaleFactors.z = cellAltitude;
-
-			meshForCell.overwriteWith(meshUnitCube);
-			transforms.Scale.transformCoordsMany
+			this.drawToGraphicsForCamera_2_Render_Cell
 			(
-				meshForCell.vertexOffsets, [ scaleFactors ]
+				graphics,
+				camera,
+				drawPos,
+				transformCameraIsometric,
+				transformScale,
+				scaleFactors,
+				meshForCell,
+				meshUnitCube,
+				cellIndex,
+				cellDistance
 			);
+		}
+	}
 
-			var faces = meshForCell.faces();
-			var faceIndexTop = 4;
+	drawToGraphicsForCamera_2_Render_Cell
+	(
+		graphics,
+		camera,
+		drawPos,
+		transformCameraIsometric,
+		transformScale,
+		scaleFactors,
+		meshForCell,
+		meshUnitCube,
+		cellIndex,
+		cellDistance
+	)
+	{
+		var cellPos = this.getPosOfCellAtIndex(cellIndex); 
 
-			for (var f = 0; f < faces.length; f++)
+		var cellAtPos = this.getCellAtPos(cellPos);
+
+		var cellTerrain = cellAtPos.terrain;
+		var cellTerrainColors = cellTerrain.colors;
+		var cellAltitude = cellAtPos.altitude;
+
+		cellPos.z = 0 - cellAltitude;
+
+		scaleFactors.z = cellAltitude;
+
+		meshForCell.overwriteWith(meshUnitCube);
+		transformScale.transformCoordsMany
+		(
+			meshForCell.vertexOffsets, [ scaleFactors ]
+		);
+
+		var cameraForward = camera.orientation.forward;
+
+		var faces = meshForCell.faces();
+		var faceIndexTop = 4;
+
+		for (var f = 0; f < faces.length; f++)
+		{
+			var colorIndex = (f == faceIndexTop ? 0 : 1);
+			graphics.fillStyle = cellTerrainColors[colorIndex].systemColor();
+			graphics.beginPath();
+
+			var face = faces[f];
+			var faceNormal = face.plane().normal;
+			var vertexOffsets = face.vertices;
+
+			if (faceNormal.dotProduct(cameraForward) < 0)
 			{
-				var colorIndex = (f == faceIndexTop ? 0 : 1);
-				graphics.fillStyle = cellTerrainColors[colorIndex].systemColor();
-				graphics.beginPath();
-
-				var face = faces[f];
-				var faceNormal = face.plane().normal;
-				var vertexOffsets = face.vertices;
-
-				if (faceNormal.dotProduct(cameraForward) < 0)
+				for (var v = 0; v < vertexOffsets.length; v++)
 				{
-					for (var v = 0; v < vertexOffsets.length; v++)
+					var vertexOffset = vertexOffsets[v];
+					drawPos.overwriteWith
+					(
+						cellPos
+					).add
+					(
+						vertexOffset
+					).multiply
+					(
+						this.cellSizeInPixels
+					);
+
+					transformCameraIsometric.transformCoords
+					(
+						drawPos,
+						[ camera ]
+					);
+
+					if (v == 0)
 					{
-						var vertexOffset = vertexOffsets[v];
-						drawPos.overwriteWith
-						(
-							cellPos
-						).add
-						(
-							vertexOffset
-						).multiply
-						(
-							this.cellSizeInPixels
-						);
-
-						transformCameraIsometric.transformCoords
-						(
-							drawPos,
-							[ camera ]
-						);
-
-						if (v == 0)
-						{
-							graphics.moveTo(drawPos.x, drawPos.y);
-						}
-						else
-						{
-							graphics.lineTo(drawPos.x, drawPos.y);
-						}
+						graphics.moveTo(drawPos.x, drawPos.y);
 					}
-
-					graphics.closePath();
-					graphics.fill();
-					graphics.stroke();
+					else
+					{
+						graphics.lineTo(drawPos.x, drawPos.y);
+					}
 				}
+
+				graphics.closePath();
+				graphics.fill();
+				graphics.stroke();
 			}
 		}
 	}

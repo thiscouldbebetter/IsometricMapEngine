@@ -16,6 +16,21 @@ class Terrain
 		}
 		return Terrain._instances;
 	}
+
+	static setPrototypesOnTerrainAsObject(terrainAsObject)
+	{
+		Object.setPrototypeOf
+		(
+			terrainAsObject, Terrain.prototype
+		);
+
+		terrainAsObject.colors.forEach
+		(
+			x => Object.setPrototypeOf(x, Color.prototype)
+		);
+
+		return terrainAsObject;
+	}
 }
 
 class Terrain_Instances

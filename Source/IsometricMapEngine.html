@@ -7,12 +7,101 @@
 	<h3>Isometric Map Engine</h3>
 
 	<p>
-		Use the Terrains and Altitudes textareas to specify the landscape,
+		Use the textareas below to specify the landscape,
 		then click the Render button to display its isometric graphical representation.
 	</p>
 
-	<label for="textareaTerrains">Terrains:</label><br />
-	<textarea id="textareaTerrains" cols="8" rows="9">
+	<label>Map Data:</label>
+	<button onclick="UiEventHandler.buttonMapDemoLoad_Clicked()">Load Demo</button>
+	<br />
+
+	<label for="textareaTerrainDefns">Terrain Definitions:</label><br />
+	
+	<textarea id="textareaTerrainDefns" cols="40" rows="10">
+[
+    {
+        "name": "Grass",
+        "codeChar": ".",
+        "colors": [
+            {
+                "name": "Green",
+                "code": "g",
+                "componentsRGBA": [
+                    0,
+                    1,
+                    0,
+                    1
+                ]
+            },
+            {
+                "name": "Yellow",
+                "code": "y",
+                "componentsRGBA": [
+                    1,
+                    1,
+                    0,
+                    1
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Sand",
+        "codeChar": "-",
+        "colors": [
+            {
+                "name": "Yellow",
+                "code": "y",
+                "componentsRGBA": [
+                    1,
+                    1,
+                    0,
+                    1
+                ]
+            },
+            {
+                "name": "Yellow",
+                "code": "y",
+                "componentsRGBA": [
+                    1,
+                    1,
+                    0,
+                    1
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Water",
+        "codeChar": "~",
+        "colors": [
+            {
+                "name": "Blue",
+                "code": "b",
+                "componentsRGBA": [
+                    0,
+                    0,
+                    1,
+                    1
+                ]
+            },
+            {
+                "name": "Blue",
+                "code": "b",
+                "componentsRGBA": [
+                    0,
+                    0,
+                    1,
+                    1
+                ]
+            }
+        ]
+    }
+]
+	</textarea><br />
+
+	<label for="textareaTerrains">Terrains of Map Cells:</label><br />
+	<textarea id="textareaTerrains" cols="12" rows="9">
 ~~~~~~~~
 ~~~~~~~~
 ~~--~~~~
@@ -23,8 +112,8 @@
 ~~~~--~~
 	</textarea><br />
 
-	<label for="textareaAltitudes">Altitudes:</label><br />
-	<textarea id="textareaAltitudes" cols="8" rows="9">
+	<label for="textareaAltitudes">Altitudes of MapCells:</label><br />
+	<textarea id="textareaAltitudes" cols="12" rows="9">
 ........
 ........
 ........
@@ -35,7 +124,33 @@
 ....11..
 	</textarea><br />
 
-	<input id="buttonRender" type="button" onclick="buttonRender_Clicked();" value="Render"><br />
+	<div>
+		<label>Camera:</label>
+		<div>
+			<label>View Size:</label>
+			<label>X:</label>
+			<input id="inputCameraViewSizeX" type="number" value="320" style="width:64px" />
+			<label>Y:</label>
+			<input id="inputCameraViewSizeY" type="number" value="240" style="width:64px" />
+		</div>
+
+		<div>
+			<label>View Pos:</label>
+			<label>X:</label>
+			<input id="inputCameraViewPosX" type="number" value="32" style="width:64px" />
+			<label>Y:</label>
+			<input id="inputCameraViewPosY" type="number" value="96" style="width:64px" />
+			<label>Z:</label>
+			<input id="inputCameraViewPosZ" type="number" value="-32" style="width:64px" />
+		</div>
+
+	</div>
+
+	<button
+		id="buttonRender"
+		onclick="UiEventHandler.buttonRender_Clicked();"
+	>Render</button>
+	<br />
 
 	<label for="divOutput">Rendered:</label><br />
 	<div id="divOutput">
@@ -43,48 +158,7 @@
 	</div>
 </div>
 
-<script type="text/javascript">
-
-// UI events.
-
-function buttonRender_Clicked()
-{
-	var d = document;
-
-	var cellSizeInPixels = new Coords(16, 16, 2.4);
-
-	var textareaTerrains = d.getElementById("textareaTerrains");
-	var cellTerrainsAsString = textareaTerrains.value;
-	var cellTerrainsAsStrings = cellTerrainsAsString.split("\n");
-
-	var textareaAltitudes = d.getElementById("textareaAltitudes");
-	var cellAltitudesAsString = textareaAltitudes.value;
-	var cellAltitudesAsStrings = cellAltitudesAsString.split("\n");
-
-	var map = MapOfCells.buildFromCellTerrainsAndAltitudesAsStrings
-	(
-		"Map0",
-		cellSizeInPixels,
-		cellTerrainsAsStrings,
-		cellAltitudesAsStrings
-	);
-
-	var camera = new Camera
-	(
-		new Coords(320, 200, 1), // viewSize
-		new Coords(32, 96, -32), // pos
-		new Orientation
-		(
-			new Coords(1, -1, 1), // forward
-			new Coords(0, 0, 1) // down
-		)
-	);
-
-	var venue = new Venue("Venue0", map, camera);
-
-	venue.draw();
-}
-</script>
+<script type="text/javascript" src="UiEventHandler.js"></script>
 
 <script type="text/javascript" src="Framework/Source/Display/Color.js"></script>
 
